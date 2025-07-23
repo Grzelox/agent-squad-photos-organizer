@@ -1,0 +1,24 @@
+[project]
+name = "agent-squad-photos-organizer"
+version = "0.1.0"
+description = "AI agent that organizes photos locally using Ollama"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.1.7",
+    "ollama>=0.4.4",
+    "exifread>=3.3.2",
+    "numpy>=2.3.1",
+    "pandas>=2.3.1",
+    "pillow>=11.3.0",
+    "python-dotenv>=1.1.1",
+    "scikit-learn>=1.7.1",
+    "rich>=13.9.4",
+    "opencv-python>=4.8.0",
+    "imagehash>=4.3.1",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+]
