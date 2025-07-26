@@ -4,18 +4,18 @@ A powerful local AI agent that helps you organize, analyze, and manage your phot
 
 ## ✨ Features
 
-- **🤖 Local AI Processing**: Uses Ollama for privacy-first AI analysis
-- **🖼️ AI Vision Analysis**: Analyze image content using gemma3:4b vision model
-- **🔍 Image Similarity Detection**: Find similar images using perceptual hashing
-- **📊 Metadata Extraction**: Extracts comprehensive EXIF and file metadata
-- **📁 Smart Organization**: Organize photos by date, camera, or AI-suggested criteria
-- **🔍 Duplicate Detection**: Find and manage duplicate photos
-- **🎯 Photo Clustering**: Group similar photos using machine learning
-- **💬 Interactive CLI**: Beautiful terminal interface with rich output
-- **🤖 AI Chat**: Ask questions about your photo collection
-- **📈 Statistics**: Detailed analytics about your photo collection
-- **🔧 Health Checks**: System status and Ollama integration verification
-- **🔄 Image Comparison**: Compare two images using AI vision
+- **Local AI Processing**: Uses Ollama for privacy-first AI analysis
+- **AI Vision Analysis**: Analyze image content using gemma3:4b vision model
+- **Image Similarity Detection**: Find similar images using perceptual hashing
+- **Metadata Extraction**: Extracts comprehensive EXIF and file metadata
+- **Smart Organization**: Organize photos by date, camera, or AI-suggested criteria
+- **Duplicate Detection**: Find and manage duplicate photos
+- **Photo Clustering**: Group similar photos using machine learning
+- **Interactive CLI**: Beautiful terminal interface with rich output
+- **AI Chat**: Ask questions about your photo collection
+- **Statistics**: Detailed analytics about your photo collection
+- **Health Checks**: System status and Ollama integration verification
+- **Image Comparison**: Compare two images using AI vision
 
 ## 🚀 Installation
 
@@ -111,7 +111,7 @@ python main.py organize --method date --execute
 python main.py --photos-dir /path/to/your/photos scan
 ```
 
-## 🤖 AI Features
+## AI Features
 
 ### Interactive Chat
 
@@ -136,7 +136,7 @@ The AI can help you with:
 - **Date/time pattern** recognition
 - **Camera/device pattern** analysis
 
-### 🖼️ AI Vision Analysis
+### AI Vision Analysis
 
 #### Single Image Analysis
 
@@ -212,7 +212,7 @@ The application now uses `gemma3:4b` which supports:
 - **Image analysis**: For analyzing photo content and comparing images
 - **Multi-modal input**: Can process both text and images simultaneously
 
-## 📊 Output Formats
+## Output Formats
 
 ### Analysis Results
 
@@ -279,6 +279,6 @@ Content-based grouping results:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
