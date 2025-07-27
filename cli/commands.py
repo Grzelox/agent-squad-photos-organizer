@@ -3,14 +3,14 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from services.photo_service import PhotoService
-from services.ai_service import AIService
-from services.organization_service import OrganizationService
-from services.image_analysis_service import ImageAnalysisService
-from config import config
+from modules.services.photo_service import PhotoService
+from modules.services.ai_service import AIService
+from modules.services.organization_service import OrganizationService
+from modules.services.image_analysis_service import ImageAnalysisService
+from modules.config import config
 
 
-console = Console()
+console: Console = Console()
 
 
 @click.group()
@@ -34,9 +34,7 @@ def scan(ctx):
     console.print("[bold blue]Scanning photos directory...[/bold blue]")
 
     if not photo_service.validate_photos_directory():
-        console.print(
-            f"[red]No photos found in {photo_service.photos_directory}[/red]"
-        )
+        console.print(f"[red]No photos found in {photo_service.photos_directory}[/red]")
         console.print(
             "[yellow]Make sure your photos are in the /photos directory[/yellow]"
         )
@@ -171,9 +169,7 @@ def cluster(ctx, clusters):
     photo_service = ctx.obj["photo_service"]
     org_service = ctx.obj["org_service"]
 
-    console.print(
-        f"[bold blue]Clustering photos into {clusters} groups...[/bold blue]"
-    )
+    console.print(f"[bold blue]Clustering photos into {clusters} groups...[/bold blue]")
 
     metadata_df = photo_service.extract_all_metadata()
     if metadata_df.empty:
@@ -257,9 +253,7 @@ def organize(ctx, method, execute):
         )
 
         if result["errors"]:
-            console.print(
-                f"[yellow]{len(result['errors'])} errors occurred:[/yellow]"
-            )
+            console.print(f"[yellow]{len(result['errors'])} errors occurred:[/yellow]")
             for error in result["errors"][:3]:
                 console.print(f"  • {error}")
 
@@ -277,9 +271,7 @@ def ask(ctx, question):
         console.print("[red]Ollama is not available[/red]")
         console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
         console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print(
-            "[yellow]After installation, run: ollama pull gemma3:4b[/yellow]"
-        )
+        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
         return
 
     console.print(f"[bold blue]Analyzing: {question}[/bold blue]")
@@ -302,9 +294,7 @@ def ask(ctx, question):
 
     response = ai_service.answer_photo_question(question, context)
 
-    console.print(
-        Panel(response, title="AI Assistant Response", border_style="green")
-    )
+    console.print(Panel(response, title="AI Assistant Response", border_style="green"))
 
 
 @cli.command()
@@ -319,9 +309,7 @@ def interactive(ctx):
         console.print("[red]Ollama is not available[/red]")
         console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
         console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print(
-            "[yellow]After installation, run: ollama pull gemma3:4b[/yellow]"
-        )
+        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
         return
 
     console.print("[bold blue]Starting interactive mode...[/bold blue]")
@@ -382,9 +370,7 @@ def ollama_status(ctx):
         console.print("[red]Ollama is not available[/red]")
         console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
         console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print(
-            "[yellow]After installation, run: ollama pull gemma3:4b[/yellow]"
-        )
+        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
 
 
 @cli.command()
@@ -452,9 +438,7 @@ def analyze_content(ctx, output):
         console.print("[red]Ollama is not available[/red]")
         console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
         console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print(
-            "[yellow]After installation, run: ollama pull gemma3:4b[/yellow]"
-        )
+        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
         return
 
     console.print("[bold blue]Analyzing image content with AI...[/bold blue]")
@@ -465,7 +449,7 @@ def analyze_content(ctx, output):
         return
 
     console.print("[yellow]Processing images with AI vision...[/yellow]")
-    content_groups = image_analysis_service.group_images_by_content( #!TODO: Fix this
+    content_groups = image_analysis_service.group_images_by_content(  #!TODO: Fix this
         metadata_df, ai_service
     )
 
@@ -509,9 +493,7 @@ def analyze_single(ctx, image_path, prompt):
         console.print("[red]Ollama is not available[/red]")
         console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
         console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print(
-            "[yellow]After installation, run: ollama pull gemma3:4b[/yellow]"
-        )
+        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
         return
 
     if not image_analysis_service._is_supported_format(image_path):
@@ -539,9 +521,7 @@ def analyze_single(ctx, image_path, prompt):
         console.print(f"[red]{analysis['error']}[/red]")
         return
 
-    console.print(
-        Panel(str(analysis), title="AI Image Analysis", border_style="green")
-    )
+    console.print(Panel(str(analysis), title="AI Image Analysis", border_style="green"))
 
 
 @cli.command()
@@ -558,9 +538,7 @@ def compare_images(ctx, image1, image2, prompt):
         console.print("[red]Ollama is not available[/red]")
         console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
         console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print(
-            "[yellow]After installation, run: ollama pull gemma3:4b[/yellow]"
-        )
+        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
         return
 
     for img_path in [image1, image2]:
@@ -579,9 +557,7 @@ def compare_images(ctx, image1, image2, prompt):
 
     comparison = ai_service.compare_images(img1_base64, img2_base64, prompt)
 
-    console.print(
-        Panel(comparison, title="AI Image Comparison", border_style="blue")
-    )
+    console.print(Panel(comparison, title="AI Image Comparison", border_style="blue"))
 
 
 if __name__ == "__main__":

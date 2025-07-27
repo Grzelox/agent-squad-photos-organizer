@@ -17,7 +17,7 @@ def temp_test_dir():
 def sample_image_files(temp_test_dir):
     """Create sample image files for testing."""
     images = []
-    
+
     # Create different types of test images
     test_images = [
         ("test_red.jpg", (100, 100), "red"),
@@ -25,24 +25,20 @@ def sample_image_files(temp_test_dir):
         ("test_green.bmp", (200, 150), "green"),
         ("test_large.jpg", (800, 600), "yellow"),
     ]
-    
+
     for filename, size, color in test_images:
-        img = Image.new('RGB', size, color=color)
+        img = Image.new("RGB", size, color=color)
         image_path = temp_test_dir / filename
         img.save(image_path)
         images.append(str(image_path))
-    
+
     yield images
 
 
 @pytest.fixture
 def mock_ollama_response():
     """Mock Ollama response for testing."""
-    return {
-        "message": {
-            "content": "This is a test response from the AI model."
-        }
-    }
+    return {"message": {"content": "This is a test response from the AI model."}}
 
 
 @pytest.fixture
@@ -60,5 +56,5 @@ def sample_metadata_dict():
         "aspect_ratio": 1.0,
         "file_hash": "d41d8cd98f00b204e9800998ecf8427e",
         "created_date": "2023-01-01 12:00:00",
-        "modified_date": "2023-01-01 12:00:00"
-    } 
+        "modified_date": "2023-01-01 12:00:00",
+    }

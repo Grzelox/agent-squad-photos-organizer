@@ -2,7 +2,7 @@
 
 A powerful local AI agent that helps you organize, analyze, and manage your photo collection using Ollama for intelligent analysis and metadata extraction. Now with advanced image analysis capabilities using gemma3:4b vision model.
 
-## ✨ Features
+## Features
 
 - **Local AI Processing**: Uses Ollama for privacy-first AI analysis
 - **AI Vision Analysis**: Analyze image content using gemma3:4b vision model
@@ -17,7 +17,7 @@ A powerful local AI agent that helps you organize, analyze, and manage your phot
 - **Health Checks**: System status and Ollama integration verification
 - **Image Comparison**: Compare two images using AI vision
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 
@@ -111,7 +111,7 @@ python main.py organize --method date --execute
 python main.py --photos-dir /path/to/your/photos scan
 ```
 
-## AI Features
+## Features
 
 ### Interactive Chat
 
@@ -194,7 +194,7 @@ python main.py analyze-single photo.jpg --prompt "Describe the emotions in this 
 python main.py compare-images img1.jpg img2.jpg --prompt "Which image has better composition?"
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -245,40 +245,3 @@ Content-based grouping results:
 }
 ```
 
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **Ollama not running**:
-   ```bash
-   ollama serve
-   ```
-
-2. **Model not found**:
-   ```bash
-   ollama pull gemma3:4b
-   ```
-
-3. **Image analysis errors**:
-   - Ensure images are in supported formats (JPG, PNG, BMP, TIFF, WebP)
-   - Check that images are not corrupted
-   - Verify sufficient disk space for processing
-
-4. **Memory issues with large collections**:
-   - Process images in smaller batches
-   - Increase system memory if available
-   - Use lower similarity thresholds for hashing
-
-### Performance Tips
-
-- **Large collections**: Use `find-similar` for faster similarity detection
-- **AI analysis**: Use `analyze-content` for detailed content analysis
-- **Batch processing**: Results are saved to JSON files for later review
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.

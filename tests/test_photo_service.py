@@ -1,13 +1,12 @@
 import pytest
 import pandas as pd
 from pathlib import Path
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, patch
 from PIL import Image
 import tempfile
 import shutil
-from datetime import datetime
 
-from services.photo_service import PhotoService
+from modules.services.photo_service import PhotoService
 
 
 class TestPhotoService:
@@ -29,7 +28,7 @@ class TestPhotoService:
     def sample_image_path(self, temp_photos_dir):
         """Create a sample test image."""
         # Create a simple test image
-        img = Image.new('RGB', (100, 100), color='red')
+        img = Image.new("RGB", (100, 100), color="red")
         image_path = temp_photos_dir / "test_image.jpg"
         img.save(image_path)
         return image_path
@@ -39,7 +38,13 @@ class TestPhotoService:
         service = PhotoService()
         assert service.photos_directory == Path("photos")
         assert service.supported_formats == (
-            ".jpg", ".jpeg", ".png", ".tiff", ".bmp", ".gif", ".webp"
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".tiff",
+            ".bmp",
+            ".gif",
+            ".webp",
         )
 
     def test_init_custom_directory(self, temp_photos_dir):
@@ -50,7 +55,7 @@ class TestPhotoService:
     def test_extract_metadata_success(self, photo_service, sample_image_path):
         """Test successful metadata extraction from an image."""
         metadata = photo_service.extract_metadata(sample_image_path)
-        
+
         assert metadata is not None
         assert metadata["filename"] == "test_image.jpg"
         # Use resolve() to handle path differences between systems
@@ -77,7 +82,7 @@ class TestPhotoService:
         # Create a text file instead of an image
         text_file = temp_photos_dir / "not_an_image.txt"
         text_file.write_text("This is not an image")
-        
+
         metadata = photo_service.extract_metadata(text_file)
         assert metadata is None
 
@@ -97,12 +102,12 @@ class TestPhotoService:
         """Test metadata extraction from directory with images."""
         # Create multiple test images
         for i in range(3):
-            img = Image.new('RGB', (50 + i*10, 50 + i*10), color='blue')
+            img = Image.new("RGB", (50 + i * 10, 50 + i * 10), color="blue")
             image_path = temp_photos_dir / f"test_image_{i}.jpg"
             img.save(image_path)
-        
+
         df = photo_service.extract_all_metadata()
-        
+
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 3
         assert "filename" in df.columns
@@ -125,10 +130,10 @@ class TestPhotoService:
         """Test photo count in directory with images."""
         # Create test images
         for i in range(5):
-            img = Image.new('RGB', (50, 50), color='green')
+            img = Image.new("RGB", (50, 50), color="green")
             image_path = temp_photos_dir / f"test_image_{i}.jpg"
             img.save(image_path)
-        
+
         count = photo_service.get_photo_count()
         assert count == 5
 
@@ -136,14 +141,14 @@ class TestPhotoService:
         """Test photo count with mixed file types."""
         # Create images
         for i in range(3):
-            img = Image.new('RGB', (50, 50), color='red')
+            img = Image.new("RGB", (50, 50), color="red")
             image_path = temp_photos_dir / f"test_image_{i}.jpg"
             img.save(image_path)
-        
+
         # Create non-image files
         (temp_photos_dir / "text.txt").write_text("Not an image")
         (temp_photos_dir / "data.json").write_text('{"key": "value"}')
-        
+
         count = photo_service.get_photo_count()
         assert count == 3
 
@@ -156,21 +161,25 @@ class TestPhotoService:
         """Test validation of empty directory."""
         assert not photo_service.validate_photos_directory()
 
-    def test_validate_photos_directory_with_images(self, photo_service, temp_photos_dir):
+    def test_validate_photos_directory_with_images(
+        self, photo_service, temp_photos_dir
+    ):
         """Test validation of directory with images."""
         # Create a test image
-        img = Image.new('RGB', (50, 50), color='yellow')
+        img = Image.new("RGB", (50, 50), color="yellow")
         image_path = temp_photos_dir / "test_image.jpg"
         img.save(image_path)
-        
+
         assert photo_service.validate_photos_directory()
 
-    def test_validate_photos_directory_only_non_images(self, photo_service, temp_photos_dir):
+    def test_validate_photos_directory_only_non_images(
+        self, photo_service, temp_photos_dir
+    ):
         """Test validation of directory with only non-image files."""
         # Create non-image files
         (temp_photos_dir / "document.txt").write_text("Text file")
         (temp_photos_dir / "data.csv").write_text("csv,data")
-        
+
         assert not photo_service.validate_photos_directory()
 
     def test_supported_formats(self, photo_service):
@@ -178,8 +187,10 @@ class TestPhotoService:
         expected_formats = (".jpg", ".jpeg", ".png", ".tiff", ".bmp", ".gif", ".webp")
         assert photo_service.supported_formats == expected_formats
 
-    @patch('services.photo_service.Image.open')
-    def test_extract_metadata_with_exif(self, mock_image_open, photo_service, sample_image_path):
+    @patch("modules.services.photo_service.Image.open")
+    def test_extract_metadata_with_exif(
+        self, mock_image_open, photo_service, sample_image_path
+    ):
         """Test metadata extraction with EXIF data."""
         # Mock the image and EXIF data
         mock_img = Mock()
@@ -190,13 +201,13 @@ class TestPhotoService:
         mock_img.getexif.return_value = {
             36867: "2023:01:01 12:00:00",  # DateTimeOriginal
             271: "Test Camera",  # Make
-            272: "Test Model"    # Model
+            272: "Test Model",  # Model
         }
-        
+
         mock_image_open.return_value.__enter__.return_value = mock_img
-        
+
         metadata = photo_service.extract_metadata(sample_image_path)
-        
+
         assert metadata is not None
         assert metadata["exif_DateTimeOriginal"] == "2023:01:01 12:00:00"
         assert metadata["exif_Make"] == "Test Camera"
@@ -206,17 +217,17 @@ class TestPhotoService:
         """Test aspect ratio calculation for different image dimensions."""
         # Create images with different aspect ratios
         test_cases = [
-            ((100, 100), 1.0),    # Square
-            ((200, 100), 2.0),    # Landscape
-            ((100, 200), 0.5),    # Portrait
-            ((300, 150), 2.0),    # Wide landscape
+            ((100, 100), 1.0),  # Square
+            ((200, 100), 2.0),  # Landscape
+            ((100, 200), 0.5),  # Portrait
+            ((300, 150), 2.0),  # Wide landscape
         ]
-        
+
         for dimensions, expected_ratio in test_cases:
-            img = Image.new('RGB', dimensions, color='purple')
+            img = Image.new("RGB", dimensions, color="purple")
             image_path = temp_photos_dir / f"test_{dimensions[0]}x{dimensions[1]}.jpg"
             img.save(image_path)
-            
+
             metadata = photo_service.extract_metadata(image_path)
             assert metadata["aspect_ratio"] == expected_ratio
 
@@ -225,4 +236,4 @@ class TestPhotoService:
         # This test is skipped because it's difficult to properly mock
         # a 0-height image scenario with PIL and file operations
         # The actual logic is tested in test_aspect_ratio_calculation
-        pass 
+        pass
