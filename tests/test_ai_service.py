@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch
 import pandas as pd
+from modules.config import config
 from modules.services.ai_service import AIService
 
 
@@ -20,7 +21,7 @@ class TestAIService:
     def test_init_default_model(self):
         """Test AIService initialization with default model."""
         service = AIService()
-        assert service.model_name == "gemma3:4b"
+        assert service.model_name == config.model_name
 
     def test_init_custom_model(self):
         """Test AIService initialization with custom model."""
@@ -153,7 +154,7 @@ class TestAIService:
             "Compare these images", ["base64_image1", "base64_image2"]
         )
 
-        assert "Error analyzing images" in result
+        assert "Error analyzing multiple images" in result
 
     @patch("modules.services.ai_service.ollama.chat")
     def test_compare_images_with_prompt(
@@ -230,7 +231,7 @@ class TestAIService:
         mock_ollama_chat.side_effect = Exception("Test error")
 
         result = ai_service.suggest_organization_strategy({})
-        assert "Error generating organization strategy" in result
+        assert "Error suggesting organization strategy" in result
 
     @patch("modules.services.ai_service.ollama.chat")
     def test_answer_photo_question_success(
@@ -238,6 +239,8 @@ class TestAIService:
     ):
         """Test successful photo question answering."""
         mock_ollama_chat.return_value = mock_ollama_response
+
+        ai_service.cache.get = lambda key: None
 
         result = ai_service.answer_photo_question(
             "How many photos do I have?", "You have 100 photos from 2020-2023"

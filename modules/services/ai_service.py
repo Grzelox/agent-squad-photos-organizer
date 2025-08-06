@@ -1,12 +1,16 @@
 import ollama
-from typing import Dict
+from typing import Dict, Optional
+
+from modules.config import config
+from modules.cache import Cache
 
 
 class AIService:
     """Service for handling AI operations using Ollama."""
 
-    def __init__(self, model_name: str = "gemma3:4b"):
-        self.model_name = model_name
+    def __init__(self, model_name: Optional[str] = None):
+        self.model_name = model_name or config.model_name
+        self.cache = Cache()
         try:
             self._ensure_model_available()
         except Exception:
@@ -41,17 +45,10 @@ class AIService:
                 ]
 
             if self.model_name not in model_names:
-                print(f"Model {self.model_name} not found. Pulling...")
                 try:
                     ollama.pull(self.model_name)
-                    print(f"Successfully pulled model {self.model_name}")
                 except Exception as pull_error:
-                    print(f"Failed to pull model {self.model_name}: {pull_error}")
-                    print(
-                        "You can manually pull the model using: ollama pull gemma3:4b"
-                    )
-            else:
-                print(f"Model {self.model_name} is available")
+                    pass
 
         except Exception as e:
             print(f"Error checking/pulling model: {e}")
@@ -102,6 +99,15 @@ class AIService:
         except Exception as e:
             return []
 
+    def _handle_ollama_error(self, e: Exception, context: str) -> str:
+        """Centralized error handler for Ollama API calls."""
+        error_msg = f"Error {context}: {e}"
+        if "connection" in str(e).lower() or "refused" in str(e).lower():
+            error_msg += "\n💡 Make sure Ollama is running: ollama serve"
+        elif "model" in str(e).lower() and "not found" in str(e).lower():
+            error_msg += f"\n💡 Model {self.model_name} not found. Try: ollama pull {self.model_name}"
+        return error_msg
+
     def analyze_image_with_text(self, prompt: str, base64_image: str) -> str:
         """Analyze an image with text prompt using the AI model."""
         try:
@@ -110,12 +116,7 @@ class AIService:
             response = ollama.chat(model=self.model_name, messages=[message])
             return response["message"]["content"]
         except Exception as e:
-            error_msg = f"Error analyzing image: {e}"
-            if "connection" in str(e).lower() or "refused" in str(e).lower():
-                error_msg += "\nMake sure Ollama is running: ollama serve"
-            elif "model" in str(e).lower() and "not found" in str(e).lower():
-                error_msg += f"\nModel {self.model_name} not found. Try: ollama pull {self.model_name}"
-            return error_msg
+            return self._handle_ollama_error(e, "analyzing image")
 
     def analyze_multiple_images(self, prompt: str, base64_images: list) -> str:
         """Analyze multiple images with a text prompt."""
@@ -125,12 +126,7 @@ class AIService:
             response = ollama.chat(model=self.model_name, messages=[message])
             return response["message"]["content"]
         except Exception as e:
-            error_msg = f"Error analyzing images: {e}"
-            if "connection" in str(e).lower() or "refused" in str(e).lower():
-                error_msg += "\nMake sure Ollama is running: ollama serve"
-            elif "model" in str(e).lower() and "not found" in str(e).lower():
-                error_msg += f"\nModel {self.model_name} not found. Try: ollama pull {self.model_name}"
-            return error_msg
+            return self._handle_ollama_error(e, "analyzing multiple images")
 
     def compare_images(
         self, image1_base64: str, image2_base64: str, comparison_prompt: str = None
@@ -157,12 +153,7 @@ class AIService:
             response = ollama.chat(model=self.model_name, messages=[message])
             return response["message"]["content"]
         except Exception as e:
-            error_msg = f"Error comparing images: {e}"
-            if "connection" in str(e).lower() or "refused" in str(e).lower():
-                error_msg += "\n💡 Make sure Ollama is running: ollama serve"
-            elif "model" in str(e).lower() and "not found" in str(e).lower():
-                error_msg += f"\n💡 Model {self.model_name} not found. Try: ollama pull {self.model_name}"
-            return error_msg
+            return self._handle_ollama_error(e, "comparing images")
 
     def analyze_photos_metadata(self, metadata_summary: str) -> str:
         """Analyze photo metadata and provide insights."""
@@ -186,12 +177,7 @@ class AIService:
             )
             return response["message"]["content"]
         except Exception as e:
-            error_msg = f"Error analyzing metadata: {e}"
-            if "connection" in str(e).lower() or "refused" in str(e).lower():
-                error_msg += "\nMake sure Ollama is running: ollama serve"
-            elif "model" in str(e).lower() and "not found" in str(e).lower():
-                error_msg += f"\nModel {self.model_name} not found. Try: ollama pull {self.model_name}"
-            return error_msg
+            return self._handle_ollama_error(e, "analyzing metadata")
 
     def suggest_organization_strategy(self, photo_stats: Dict) -> str:
         """Suggest organization strategy based on photo statistics."""
@@ -215,15 +201,15 @@ class AIService:
             )
             return response["message"]["content"]
         except Exception as e:
-            error_msg = f"Error generating organization strategy: {e}"
-            if "connection" in str(e).lower() or "refused" in str(e).lower():
-                error_msg += "\nMake sure Ollama is running: ollama serve"
-            elif "model" in str(e).lower() and "not found" in str(e).lower():
-                error_msg += f"\nModel {self.model_name} not found. Try: ollama pull {self.model_name}"
-            return error_msg
+            return self._handle_ollama_error(e, "suggesting organization strategy")
 
     def answer_photo_question(self, question: str, context: str) -> str:
         """Answer questions about the photo collection."""
+        cache_key = {"question": question, "context": context}
+        cached_response = self.cache.get(cache_key)
+        if cached_response:
+            return cached_response
+
         prompt = f"""
         You are a helpful photo organization assistant. Answer the user's question about their photo collection.
         
@@ -239,14 +225,11 @@ class AIService:
             response = ollama.chat(
                 model=self.model_name, messages=[{"role": "user", "content": prompt}]
             )
-            return response["message"]["content"]
+            response_content = response["message"]["content"]
+            self.cache.set(cache_key, response_content)
+            return response_content
         except Exception as e:
-            error_msg = f"Error answering question: {e}"
-            if "connection" in str(e).lower() or "refused" in str(e).lower():
-                error_msg += "\nMake sure Ollama is running: ollama serve"
-            elif "model" in str(e).lower() and "not found" in str(e).lower():
-                error_msg += f"\nModel {self.model_name} not found. Try: ollama pull {self.model_name}"
-            return error_msg
+            return self._handle_ollama_error(e, "answering question")
 
     def generate_organization_plan(self, criteria: str, metadata_df) -> str:
         """Generate a detailed organization plan."""
@@ -271,12 +254,7 @@ class AIService:
             )
             return response["message"]["content"]
         except Exception as e:
-            error_msg = f"Error generating organization plan: {e}"
-            if "connection" in str(e).lower() or "refused" in str(e).lower():
-                error_msg += "\nMake sure Ollama is running: ollama serve"
-            elif "model" in str(e).lower() and "not found" in str(e).lower():
-                error_msg += f"\nModel {self.model_name} not found. Try: ollama pull {self.model_name}"
-            return error_msg
+            return self._handle_ollama_error(e, "generating organization plan")
 
     def _create_metadata_summary(self, metadata_df) -> str:
         """Create a concise summary of metadata for AI processing."""

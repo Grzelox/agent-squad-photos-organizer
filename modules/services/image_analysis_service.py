@@ -7,6 +7,7 @@ from typing import Dict, Optional
 import pandas as pd
 from pathlib import Path
 import json
+from modules.cache import Cache
 
 
 class ImageAnalysisService:
@@ -15,6 +16,7 @@ class ImageAnalysisService:
     def __init__(self, photos_directory: str):
         self.photos_directory = photos_directory
         self.supported_formats = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
+        self.cache = Cache()
 
     def encode_image_to_base64(self, image_path: str) -> Optional[str]:
         """Encode an image to base64 string for model input."""
@@ -28,13 +30,20 @@ class ImageAnalysisService:
 
     def get_image_hash(self, image_path: str) -> Optional[str]:
         """Get perceptual hash of an image for similarity detection."""
+        cache_key = f"image_hash_{image_path}"
+        cached_hash = self.cache.get(cache_key)
+        if cached_hash:
+            return cached_hash
+
         try:
             with Image.open(image_path) as img:
                 if img.mode != "RGB":
                     img = img.convert("RGB")
                 img = img.resize((64, 64))
                 hash_value = imagehash.average_hash(img)
-                return str(hash_value)
+                str_hash = str(hash_value)
+                self.cache.set(cache_key, str_hash)
+                return str_hash
         except Exception as e:
             print(f"Error calculating hash for {image_path}: {e}")
             return None
@@ -140,6 +149,11 @@ class ImageAnalysisService:
 
     def analyze_image_content(self, image_path: str, ai_service) -> Dict:
         """Analyze image content using the AI model."""
+        cache_key = f"image_analysis_{image_path}"
+        cached_analysis = self.cache.get(cache_key)
+        if cached_analysis:
+            return cached_analysis
+
         try:
             base64_image = self.encode_image_to_base64(image_path)
             if not base64_image:
@@ -162,6 +176,7 @@ class ImageAnalysisService:
                 import json
 
                 analysis = json.loads(response)
+                self.cache.set(cache_key, analysis)
                 return analysis
             except json.JSONDecodeError:
                 return {"analysis": response}
