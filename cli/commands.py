@@ -10,7 +10,19 @@ from modules.services.image_analysis_service import ImageAnalysisService
 from modules.config import config
 
 
+from cli.decorators import check_ollama_availability
+
+
 console: Console = Console()
+
+
+def get_metadata_df(ctx):
+    if ctx.obj["metadata_df"] is None:
+        photo_service = ctx.obj["photo_service"]
+        console.print("[yellow]Extracting metadata...[/yellow]")
+        ctx.obj["metadata_df"] = photo_service.extract_all_metadata()
+    return ctx.obj["metadata_df"]
+
 
 
 @click.group()
@@ -24,6 +36,7 @@ def cli(ctx, photos_dir):
     ctx.obj["ai_service"] = AIService()
     ctx.obj["org_service"] = OrganizationService(photos_directory)
     ctx.obj["image_analysis_service"] = ImageAnalysisService(photos_directory)
+    ctx.obj["metadata_df"] = None
 
 
 @cli.command()
@@ -40,8 +53,7 @@ def scan(ctx):
         )
         return
 
-    console.print("[yellow]Extracting metadata...[/yellow]")
-    metadata_df = photo_service.extract_all_metadata()
+    metadata_df = get_metadata_df(ctx)
 
     if metadata_df.empty:
         console.print("[red]No photos could be processed[/red]")
@@ -87,7 +99,7 @@ def stats(ctx):
 
     console.print("[bold blue]Analyzing photo collection...[/bold blue]")
 
-    metadata_df = photo_service.extract_all_metadata()
+    metadata_df = get_metadata_df(ctx)
     if metadata_df.empty:
         console.print("[red]No photos found to analyze[/red]")
         return
@@ -137,7 +149,7 @@ def duplicates(ctx):
 
     console.print("[bold blue]Searching for duplicate photos...[/bold blue]")
 
-    metadata_df = photo_service.extract_all_metadata()
+    metadata_df = get_metadata_df(ctx)
     if metadata_df.empty:
         console.print("[red]No photos found to analyze[/red]")
         return
@@ -171,7 +183,7 @@ def cluster(ctx, clusters):
 
     console.print(f"[bold blue]Clustering photos into {clusters} groups...[/bold blue]")
 
-    metadata_df = photo_service.extract_all_metadata()
+    metadata_df = get_metadata_df(ctx)
     if metadata_df.empty:
         console.print("[red]No photos found to analyze[/red]")
         return
@@ -221,7 +233,7 @@ def organize(ctx, method, execute):
     action = "Organizing" if execute else "Planning organization of"
     console.print(f"[bold blue]{action} photos by {method}...[/bold blue]")
 
-    metadata_df = photo_service.extract_all_metadata()
+    metadata_df = get_metadata_df(ctx)
     if metadata_df.empty:
         console.print("[red]No photos found to organize[/red]")
         return
@@ -261,22 +273,16 @@ def organize(ctx, method, execute):
 @cli.command()
 @click.argument("question")
 @click.pass_context
+@check_ollama_availability
 def ask(ctx, question):
     """Ask the AI agent about your photos"""
     photo_service = ctx.obj["photo_service"]
     ai_service = ctx.obj["ai_service"]
     org_service = ctx.obj["org_service"]
 
-    if not ai_service.is_ollama_available():
-        console.print("[red]Ollama is not available[/red]")
-        console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
-        console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
-        return
-
     console.print(f"[bold blue]Analyzing: {question}[/bold blue]")
 
-    metadata_df = photo_service.extract_all_metadata()
+    metadata_df = get_metadata_df(ctx)
     if metadata_df.empty:
         console.print("[red]No photos found to analyze[/red]")
         return
@@ -299,23 +305,18 @@ def ask(ctx, question):
 
 @cli.command()
 @click.pass_context
+@check_ollama_availability
 def interactive(ctx):
     """Start interactive chat mode with the AI agent"""
     photo_service = ctx.obj["photo_service"]
     ai_service = ctx.obj["ai_service"]
     org_service = ctx.obj["org_service"]
 
-    if not ai_service.is_ollama_available():
-        console.print("[red]Ollama is not available[/red]")
-        console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
-        console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
-        return
-
     console.print("[bold blue]Starting interactive mode...[/bold blue]")
     console.print("[cyan]Type 'exit' or 'quit' to leave interactive mode[/cyan]\n")
 
-    metadata_df = photo_service.extract_all_metadata()
+
+    metadata_df = get_metadata_df(ctx)
     if metadata_df.empty:
         console.print("[red]No photos found to analyze[/red]")
         return
@@ -365,12 +366,12 @@ def ollama_status(ctx):
                 console.print(f"  {status} {model}")
         else:
             console.print("[yellow]No models found[/yellow]")
-            console.print("[yellow]Pull a model: ollama pull gemma3:4b[/yellow]")
+            console.print(f"[yellow]Pull a model: ollama pull {ai_service.model_name}[/yellow]")
     else:
         console.print("[red]Ollama is not available[/red]")
         console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
         console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
+        console.print(f"[yellow]After installation, run: ollama pull {ai_service.model_name}[/yellow]")
 
 
 @cli.command()
@@ -388,7 +389,7 @@ def find_similar(ctx, threshold, output):
         f"[bold blue]Finding similar images (threshold: {threshold})...[/bold blue]"
     )
 
-    metadata_df = photo_service.extract_all_metadata()
+    metadata_df = get_metadata_df(ctx)
     if metadata_df.empty:
         console.print("[red]No photos found to analyze[/red]")
         return
@@ -428,28 +429,22 @@ def find_similar(ctx, threshold, output):
     "--output", default="content_analysis.json", help="Output file for results"
 )
 @click.pass_context
+@check_ollama_availability
 def analyze_content(ctx, output):
     """Analyze image content using AI vision model"""
     photo_service = ctx.obj["photo_service"]
     ai_service = ctx.obj["ai_service"]
     image_analysis_service = ctx.obj["image_analysis_service"]
 
-    if not ai_service.is_ollama_available():
-        console.print("[red]Ollama is not available[/red]")
-        console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
-        console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
-        return
-
     console.print("[bold blue]Analyzing image content with AI...[/bold blue]")
 
-    metadata_df = photo_service.extract_all_metadata()
+    metadata_df = get_metadata_df(ctx)
     if metadata_df.empty:
         console.print("[red]No photos found to analyze[/red]")
         return
 
     console.print("[yellow]Processing images with AI vision...[/yellow]")
-    content_groups = image_analysis_service.group_images_by_content(  #!TODO: Fix this
+    content_groups = image_analysis_service.group_images_by_content(
         metadata_df, ai_service
     )
 
@@ -484,17 +479,11 @@ def analyze_content(ctx, output):
 @click.argument("image_path")
 @click.option("--prompt", default=None, help="Custom analysis prompt")
 @click.pass_context
+@check_ollama_availability
 def analyze_single(ctx, image_path, prompt):
     """Analyze a single image with AI vision"""
     ai_service = ctx.obj["ai_service"]
     image_analysis_service = ctx.obj["image_analysis_service"]
-
-    if not ai_service.is_ollama_available():
-        console.print("[red]Ollama is not available[/red]")
-        console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
-        console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
-        return
 
     if not image_analysis_service._is_supported_format(image_path):
         console.print(f"[red]Unsupported image format: {image_path}[/red]")
@@ -529,17 +518,11 @@ def analyze_single(ctx, image_path, prompt):
 @click.argument("image2")
 @click.option("--prompt", default=None, help="Custom comparison prompt")
 @click.pass_context
+@check_ollama_availability
 def compare_images(ctx, image1, image2, prompt):
     """Compare two images using AI vision"""
     ai_service = ctx.obj["ai_service"]
     image_analysis_service = ctx.obj["image_analysis_service"]
-
-    if not ai_service.is_ollama_available():
-        console.print("[red]Ollama is not available[/red]")
-        console.print("[yellow]Make sure Ollama is running: ollama serve[/yellow]")
-        console.print("[yellow]Install Ollama from: https://ollama.ai[/yellow]")
-        console.print("[yellow]After installation, run: ollama pull gemma3:4b[/yellow]")
-        return
 
     for img_path in [image1, image2]:
         if not image_analysis_service._is_supported_format(img_path):
